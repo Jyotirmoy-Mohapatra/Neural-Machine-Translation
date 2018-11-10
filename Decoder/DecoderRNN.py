@@ -29,11 +29,11 @@ class DecoderRNN(nn.Module):
 			self.hidden = self.init_hidden(batch_size)
 		output = self.embedding(input).view(1, 1, -1)
 		output = F.relu(output)
-		output, hidden = self.gru(output, hidden)
+		output, self.hidden = self.gru(output, self.hidden)
 		output = self.softmax(self.out(output[0]))
-		return output, hidden
+		return output, self.hidden
 
-	def initHidden(self):
+	def initHidden(self,batch_size):
 		if self.bi==True:
 			return torch.zeros(self.num_layers*2, batch_size, self.hidden_size, device=device)
 		else:
