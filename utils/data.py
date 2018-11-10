@@ -1,13 +1,14 @@
 from io import open
 import random
 import torch
-
+from params import *
+"""
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 SOS_token = 0
 EOS_token = 1
 MAX_LENGTH = 60
-
+"""
 
 class Lang:
     def __init__(self, name):

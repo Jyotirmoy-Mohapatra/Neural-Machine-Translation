@@ -7,7 +7,7 @@ import torch.nn as nn
 from torch import optim
 import torch.nn.functional as F
 
-teacher_forcing_ratio = 0.5
+#teacher_forcing_ratio = 0.5
 
 
 def train(input_tensor, target_tensor, encoder, decoder, encoder_optimizer, decoder_optimizer, criterion, max_length=MAX_LENGTH):
@@ -100,6 +100,8 @@ def trainIters(encoder, decoder, n_iters, print_every=1000, plot_every=100, lear
         plot_loss_total += loss
 
         if iter % print_every == 0:
+            torch.save(encoder.state_dict(), "encoder.pth")
+            torch.save(decoder.state_dict(), "decoder.pth")
             print_loss_avg = print_loss_total / print_every
             print_loss_total = 0
             print('%s (%d %d%%) %.4f' % (timeSince(start, iter / n_iters),

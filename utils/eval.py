@@ -6,7 +6,7 @@ import torch.nn.functional as F
 from utils.plot import *
 from utils.data import *
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+#device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def evaluate(encoder, decoder, sentence, max_length=MAX_LENGTH):
     """
@@ -27,7 +27,7 @@ def evaluate(encoder, decoder, sentence, max_length=MAX_LENGTH):
         input_tensor = input_lang.tensorFromSentence(sentence)
         input_length = input_tensor.size()[0]
         # encode the source lanugage
-        encoder_hidden = encoder.initHidden()
+        encoder_hidden = encoder.initHidden(1)
 
         encoder_outputs = torch.zeros(max_length, encoder.hidden_size, device=device)
 
@@ -48,18 +48,21 @@ def evaluate(encoder, decoder, sentence, max_length=MAX_LENGTH):
             decoder_output, decoder_hidden, decoder_attention = decoder(
                 decoder_input, decoder_hidden, encoder_outputs)
             
-            # hint: print out decoder_output and decoder_attention
-            # TODO: add your code here to populate decoded_words and decoder_attentions
-            # TODO: do this in 2 ways discussed in class: greedy & beam_search
-            
-            # END TO DO
+            #decoder_attentions[di] = decoder_attention.data
+            topv, topi = decoder_output.data.topk(1)
+            if topi.item() == EOS_token:
+                decoded_words.append('<EOS>')
+                break
+            else:
+                decoded_words.append(output_lang.index2word[topi.item()])
+
             
             decoder_input = topi.squeeze().detach()
 
         return decoded_words, decoder_attentions[:di + 1]
 
 
-def evaluateRandomly(encoder, decoder,input_lang, n=10):
+def evaluateRandomly(encoder, decoder, n=10):
     """
     Randomly select a English sentence from the dataset and try to produce its French translation.
     Note that you need a correct implementation of evaluate() in order to make this function work.
@@ -68,7 +71,7 @@ def evaluateRandomly(encoder, decoder,input_lang, n=10):
         pair = random.choice(pairs)
         print('>', pair[0])
         print('=', pair[1])
-        output_words, attentions = evaluate(encoder, decoder,input_lang, pair[0])
+        output_words, attentions = evaluate(encoder, decoder, pair[0])
         output_sentence = ' '.join(output_words)
         print('<', output_sentence)
         print('')
