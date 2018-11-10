@@ -33,7 +33,7 @@ class DecoderRNN(nn.Module):
 		output = self.softmax(self.out(output[0]))
 		return output, hidden
 
-	def initHidden(self):
+	def initHidden(self,batch_size):
 		if self.bi==True:
 			return torch.zeros(self.num_layers*2, batch_size, self.hidden_size, device=device)
 		else:
