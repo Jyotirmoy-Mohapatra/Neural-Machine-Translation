@@ -1,10 +1,9 @@
-"""
 import matplotlib.pyplot as plt
 plt.switch_backend('agg')
 import matplotlib.ticker as ticker
 import numpy as np
-%matplotlib inline
-"""
+#%matplotlib inline
+
 def showPlot(points):
     plt.figure()
     fig, ax = plt.subplots()

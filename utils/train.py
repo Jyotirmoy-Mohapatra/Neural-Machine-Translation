@@ -1,13 +1,17 @@
-"""
 import time
 import math
-from plot import *
-"""
+from utils.plot import *
+from utils.data import *
+
+import torch.nn as nn
+from torch import optim
+import torch.nn.functional as F
+
 teacher_forcing_ratio = 0.5
 
 
 def train(input_tensor, target_tensor, encoder, decoder, encoder_optimizer, decoder_optimizer, criterion, max_length=MAX_LENGTH):
-    encoder_hidden = encoder.initHidden()
+    encoder_hidden = encoder.initHidden(1)
 
     encoder_optimizer.zero_grad()
     decoder_optimizer.zero_grad()
@@ -35,6 +39,7 @@ def train(input_tensor, target_tensor, encoder, decoder, encoder_optimizer, deco
         for di in range(target_length):
             decoder_output, decoder_hidden, decoder_attention = decoder(
                 decoder_input, decoder_hidden, encoder_outputs)
+            
             loss += criterion(decoder_output, target_tensor[di])
             decoder_input = target_tensor[di]  # Teacher forcing
 
@@ -45,7 +50,7 @@ def train(input_tensor, target_tensor, encoder, decoder, encoder_optimizer, deco
                 decoder_input, decoder_hidden, encoder_outputs)
             topv, topi = decoder_output.topk(1)
             decoder_input = topi.squeeze().detach()  # detach from history as input
-
+            
             loss += criterion(decoder_output, target_tensor[di])
             if decoder_input.item() == EOS_token:
                 break

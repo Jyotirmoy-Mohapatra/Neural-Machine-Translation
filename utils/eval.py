@@ -1,3 +1,13 @@
+import torch
+import torch.nn as nn
+from torch import optim
+import torch.nn.functional as F
+
+from utils.plot import *
+from utils.data import *
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 def evaluate(encoder, decoder, sentence, max_length=MAX_LENGTH):
     """
     Function that generate translation.
@@ -14,7 +24,7 @@ def evaluate(encoder, decoder, sentence, max_length=MAX_LENGTH):
     """    
     # process input sentence
     with torch.no_grad():
-        input_tensor = tensorFromSentence(input_lang, sentence)
+        input_tensor = input_lang.tensorFromSentence(sentence)
         input_length = input_tensor.size()[0]
         # encode the source lanugage
         encoder_hidden = encoder.initHidden()
@@ -49,7 +59,7 @@ def evaluate(encoder, decoder, sentence, max_length=MAX_LENGTH):
         return decoded_words, decoder_attentions[:di + 1]
 
 
-def evaluateRandomly(encoder, decoder, n=10):
+def evaluateRandomly(encoder, decoder,input_lang, n=10):
     """
     Randomly select a English sentence from the dataset and try to produce its French translation.
     Note that you need a correct implementation of evaluate() in order to make this function work.
@@ -58,7 +68,7 @@ def evaluateRandomly(encoder, decoder, n=10):
         pair = random.choice(pairs)
         print('>', pair[0])
         print('=', pair[1])
-        output_words, attentions = evaluate(encoder, decoder, pair[0])
+        output_words, attentions = evaluate(encoder, decoder,input_lang, pair[0])
         output_sentence = ' '.join(output_words)
         print('<', output_sentence)
         print('')

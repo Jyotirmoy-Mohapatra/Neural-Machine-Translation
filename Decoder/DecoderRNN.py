@@ -11,7 +11,8 @@ class DecoderRNN(nn.Module):
 	def __init__(self, hidden_size, output_size, bidirectional=False,num_layers=1):
 		super(DecoderRNN, self).__init__()
 		self.hidden_size = hidden_size
-
+		self.bi = bidirectional
+		self.num_layers=num_layers
 		self.embedding = nn.Embedding(output_size, hidden_size)
 		if self.bi==True:
 			self.gru = nn.GRU(hidden_size, hidden_size, self.num_layers, bidirectional=True)
@@ -20,18 +21,18 @@ class DecoderRNN(nn.Module):
 		self.out = nn.Linear(hidden_size, output_size)
 		self.softmax = nn.LogSoftmax(dim=1)
 
-	def forward(self, input, hidden):
-		batch_size, seq_len = X.size()
+	def forward(self, input, hidden, weights):
+		batch_size = 1
 		#reset hidden state here
 		if torch.cuda.is_available():
-			self.hidden = self.init_hidden(batch_size).cuda()
+			self.hidden = self.initHidden(batch_size).cuda()
 		else:
-			self.hidden = self.init_hidden(batch_size)
+			self.hidden = self.initHidden(batch_size)
 		output = self.embedding(input).view(1, 1, -1)
 		output = F.relu(output)
-		output, self.hidden = self.gru(output, self.hidden)
+		output, self.hidden = self.gru(output, hidden)
 		output = self.softmax(self.out(output[0]))
-		return output, self.hidden
+		return output, self.hidden, weights
 
 	def initHidden(self,batch_size):
 		if self.bi==True:

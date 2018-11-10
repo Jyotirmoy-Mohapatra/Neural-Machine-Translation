@@ -1,12 +1,13 @@
-"""
 from io import open
 import random
 import torch
-"""
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 SOS_token = 0
 EOS_token = 1
+MAX_LENGTH = 60
+
 
 class Lang:
     def __init__(self, name):
@@ -38,13 +39,21 @@ class Lang:
         indexes.append(EOS_token)
         return torch.tensor(indexes, dtype=torch.long, device=device).view(-1, 1)
 
+def filterPair(p):
+    return len(p[0].split(' ')) < MAX_LENGTH and \
+        len(p[1].split(' ')) < MAX_LENGTH 
+
+
+def filterPairs(pairs):
+    return [pair for pair in pairs if filterPair(pair)]
+
 def readLangs(lang1, lang2, reverse=False):
     print("Reading lines...")
 
     # Read the file and split into lines
-    lines1 = open('iwslt-vi-en/train.tok.%s' % (lang1), encoding='utf-8').\
+    lines1 = open('/home/jyotirmoy/Desktop/NLP Project/iwslt-vi-en/train.tok.%s' % (lang1), encoding='utf-8').\
         read().strip().split('\n')
-    lines2 = open('iwslt-vi-en/train.tok.%s' % (lang2), encoding='utf-8').\
+    lines2 = open('/home/jyotirmoy/Desktop/NLP Project/iwslt-vi-en/train.tok.%s' % (lang2), encoding='utf-8').\
         read().strip().split('\n')
 
     # Split every line into pairs and normalize
@@ -64,20 +73,28 @@ def readLangs(lang1, lang2, reverse=False):
 def prepareData(lang1, lang2, reverse=False):
     input_lang, output_lang, pairs = readLangs(lang1, lang2, reverse)
     print("Read %s sentence pairs" % len(pairs))
-    #pairs = filterPairs(pairs)
-    #print("Trimmed to %s sentence pairs" % len(pairs))
+    pairs = filterPairs(pairs)
+    print("Trimmed to %s sentence pairs" % len(pairs))
     print("Counting words...")
+    maxLen = 0
+    maxsent = []
     for pair in pairs:
         input_lang.addSentence(pair[0])
         output_lang.addSentence(pair[1])
+        #maxLen = max(maxLen,len(pair[0].split(' ')))
+        #if maxLen < len(pair[0].split(' ')):
+        #    maxLen = len(pair[0].split(' '))
+        #    maxsent = [pair[0],pair[1]]
     print("Counted words:")
     print(input_lang.name, input_lang.n_words)
     print(output_lang.name, output_lang.n_words)
+    #print("MAX_LENGTH = ",maxLen)
+    #print(maxsent)
     return input_lang, output_lang, pairs
 
 
-#input_lang, output_lang, pairs = prepareData('vi', 'en', False)
-#print(random.choice(pairs))
+input_lang, output_lang, pairs = prepareData('vi', 'en', False)
+print(random.choice(pairs))
 
 
 def tensorsFromPair(pair):
