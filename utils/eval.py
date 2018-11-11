@@ -2,10 +2,10 @@ import torch
 import torch.nn as nn
 from torch import optim
 import torch.nn.functional as F
+from sacreBLEU.sacrebleu import *
 
 from utils.plot import *
 from utils.data import *
-
 #device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def evaluate(encoder, decoder, sentence, max_length=MAX_LENGTH):
@@ -72,6 +72,8 @@ def evaluateRandomly(encoder, decoder, n=10):
         print('>', pair[0])
         print('=', pair[1])
         output_words, attentions = evaluate(encoder, decoder, pair[0])
-        output_sentence = ' '.join(output_words)
+        output_sentence = ' '.join(output_words[:-1])
+        bleu_score=sentence_bleu(output_sentence,pair[1])
         print('<', output_sentence)
+        print("BLEU Score:",bleu_score)
         print('')
