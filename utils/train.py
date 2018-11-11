@@ -82,7 +82,7 @@ def trainIters(args, encoder, decoder, n_iters, print_every=1000, plot_every=100
     plot_losses = []
     print_loss_total = 0  # Reset every print_every
     plot_loss_total = 0  # Reset every plot_every
-    
+
     encoder_optimizer = optim.SGD(encoder.parameters(), lr=learning_rate)
     decoder_optimizer = optim.SGD(decoder.parameters(), lr=learning_rate)
     training_pairs = [tensorsFromPair(random.choice(pairs))
@@ -112,4 +112,4 @@ def trainIters(args, encoder, decoder, n_iters, print_every=1000, plot_every=100
             plot_losses.append(plot_loss_avg)
             plot_loss_total = 0
 
-    showPlot(plot_losses)
+    showPlot(args, plot_losses)
