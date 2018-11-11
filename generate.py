@@ -15,7 +15,7 @@ decoder1 = DecoderRNN(hidden_size, output_lang.n_words).to(device)
 # attn_decoder1 = AttnDecoderRNN(hidden_size, output_lang.n_words, dropout_p=0.1).to(device)
 #attn_decoder1 = BahdanauAttnDecoderRNN(hidden_size, output_lang.n_words, n_layers=1, dropout_p=0.1).to(device)
 
-encoder1.load_state_dict(torch.load("encoder.pth"))
-decoder1.load_state_dict(torch.load("decoder.pth"))
+encoder1.load_state_dict(torch.load(scratch+"encoder.pth"))
+decoder1.load_state_dict(torch.load(scratch+"decoder.pth"))
 
 evaluateRandomly(encoder1, decoder1)

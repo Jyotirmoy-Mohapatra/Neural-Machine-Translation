@@ -52,9 +52,9 @@ def readLangs(lang1, lang2, reverse=False):
     print("Reading lines...")
 
     # Read the file and split into lines
-    lines1 = open('/home/jyotirmoy/Desktop/NLP Project/iwslt-vi-en/train.tok.%s' % (lang1), encoding='utf-8').\
+    lines1 = open(scratch+'iwslt-vi-en/train.tok.%s' % (lang1), encoding='utf-8').\
         read().strip().split('\n')
-    lines2 = open('/home/jyotirmoy/Desktop/NLP Project/iwslt-vi-en/train.tok.%s' % (lang2), encoding='utf-8').\
+    lines2 = open(scratch+'iwslt-vi-en/train.tok.%s' % (lang2), encoding='utf-8').\
         read().strip().split('\n')
 
     # Split every line into pairs and normalize

@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 plt.switch_backend('agg')
 import matplotlib.ticker as ticker
 import numpy as np
+from params import *
 #%matplotlib inline
 
 def showPlot(points):
@@ -11,4 +12,4 @@ def showPlot(points):
     loc = ticker.MultipleLocator(base=0.2)
     ax.yaxis.set_major_locator(loc)
     plt.plot(points)
-    plt.savefig("Loss.png")
+    plt.savefig(home+"Loss.png")

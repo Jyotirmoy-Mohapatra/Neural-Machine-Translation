@@ -77,12 +77,12 @@ def timeSince(since, percent):
 
 
 
-def trainIters(encoder, decoder, n_iters, print_every=1000, plot_every=100, learning_rate=0.01):
+def trainIters(args, encoder, decoder, n_iters, print_every=1000, plot_every=100, learning_rate=0.01):
     start = time.time()
     plot_losses = []
     print_loss_total = 0  # Reset every print_every
     plot_loss_total = 0  # Reset every plot_every
-
+    
     encoder_optimizer = optim.SGD(encoder.parameters(), lr=learning_rate)
     decoder_optimizer = optim.SGD(decoder.parameters(), lr=learning_rate)
     training_pairs = [tensorsFromPair(random.choice(pairs))
@@ -100,8 +100,8 @@ def trainIters(encoder, decoder, n_iters, print_every=1000, plot_every=100, lear
         plot_loss_total += loss
 
         if iter % print_every == 0:
-            torch.save(encoder.state_dict(), "encoder.pth")
-            torch.save(decoder.state_dict(), "decoder.pth")
+            torch.save(encoder.state_dict(), scratch+args.output+"encoder.pth")
+            torch.save(decoder.state_dict(), scratch+args.output+"decoder.pth")
             print_loss_avg = print_loss_total / print_every
             print_loss_total = 0
             print('%s (%d %d%%) %.4f' % (timeSince(start, iter / n_iters),
