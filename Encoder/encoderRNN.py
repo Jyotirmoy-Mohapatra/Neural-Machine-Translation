@@ -29,11 +29,15 @@ class EncoderRNN(nn.Module):
 		embedded = self.embedding(X).view(1, 1, -1)
 		output = embedded
 		output, self.hidden = self.gru(output, hidden)
+		if self.bi:
+			output=(output[:,:,:self.hidden_size]+output[:,:,:self.hidden_size])
+			#self.hidden=torch.sum(self.hidden,dim=0,keepdim=True)
+		#print(output.size(),self.hidden.size())
 		return output, self.hidden
 
 	def initHidden(self, batch_size):
 		if self.bi==True:
-			return torch.zeros(self.num_layers*2, batch_size, self.hidden_size, device=device)
+			return torch.zeros(2*self.num_layers, batch_size, self.hidden_size, device=device)
 		else:
 			return torch.zeros(self.num_layers, batch_size, self.hidden_size, device=device)
 
