@@ -94,9 +94,7 @@ def prepareData(lang1, lang2, reverse=False):
     return input_lang, output_lang, pairs
 
 
-input_lang, output_lang, pairs = prepareData('vi', 'en', False)
-print(random.choice(pairs))
 
 
-def tensorsFromPair(pair):
+def tensorsFromPair(pair,input_lang,output_lang):
     return (input_lang.tensorFromSentence(pair[0]), output_lang.tensorFromSentence(pair[1]))

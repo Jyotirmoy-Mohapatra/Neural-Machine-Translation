@@ -78,15 +78,16 @@ def timeSince(since, percent):
 
 
 
-def trainIters(args, encoder, decoder, n_iters, print_every=1000, plot_every=100, learning_rate=0.001):
+def trainIters(args, input_lang, output_lang, pairs, encoder, decoder, n_iters, print_every=1000, plot_every=100, learning_rate=0.001):
     start = time.time()
     plot_losses = []
     print_loss_total = 0  # Reset every print_every
     plot_loss_total = 0  # Reset every plot_every
 
+
     encoder_optimizer = optim.SGD(encoder.parameters(), lr=learning_rate)
     decoder_optimizer = optim.SGD(decoder.parameters(), lr=learning_rate)
-    training_pairs = [tensorsFromPair(random.choice(pairs))
+    training_pairs = [tensorsFromPair(random.choice(pairs),input_lang,output_lang)
                       for i in range(n_iters)]
     criterion = nn.NLLLoss()
 
