@@ -62,13 +62,13 @@ def evaluate(encoder, decoder, sentence, max_length=MAX_LENGTH):
         return decoded_words, decoder_attentions[:di + 1]
 
 
-def evaluateRandomly(encoder, decoder, n=10):
+def evaluateRandomly(evalpairs, encoder, decoder, n=10):
     """
     Randomly select a English sentence from the dataset and try to produce its French translation.
     Note that you need a correct implementation of evaluate() in order to make this function work.
     """    
     for i in range(n):
-        pair = random.choice(pairs)
+        pair = random.choice(evalpairs)
         print('>', pair[0])
         print('=', pair[1])
         output_words, attentions = evaluate(encoder, decoder, pair[0])
@@ -77,3 +77,23 @@ def evaluateRandomly(encoder, decoder, n=10):
         print('<', output_sentence)
         print("BLEU Score:",bleu_score)
         print('')
+def evaluateDataset(evalpairs, ref, encoder, decoder):
+    """
+    Randomly select a English sentence from the dataset and try to produce its French translation.
+    Note that you need a correct implementation of evaluate() in order to make this function work.
+    """    
+    res = []
+    for i in range(len(evalpairs)):
+        pair = evalpairs[i]
+        #print('>', pair[0])
+        #print('=', pair[1])
+        output_words, attentions = evaluate(encoder, decoder, pair[0])
+        output_sentence = ' '.join(output_words[:-1])
+        res.append(output_sentence)
+        """bleu_score=sentence_bleu(output_sentence,pair[1])
+        print('<', output_sentence)
+        print("BLEU Score:",bleu_score)
+        print('')"""
+    bleu_score = raw_corpus_bleu(res,ref)
+    print("BLEU: ", bleu_score)
+

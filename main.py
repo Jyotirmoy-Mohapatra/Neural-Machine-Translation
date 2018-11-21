@@ -23,8 +23,6 @@ if len(args.output)>0:
     else:
         print("File Creation Success!")
 """
-input_lang, output_lang, pairs = prepareData('vi', 'en', False)
-print(random.choice(pairs))
 
 encoder1 = EncoderRNN(input_lang.n_words, hidden_size).to(device)
 #decoder1 = DecoderRNN(hidden_size, output_lang.n_words).to(device)
@@ -33,7 +31,7 @@ decoder1 = AttnDecoderRNN(hidden_size, output_lang.n_words).to(device)
 #attn_decoder1 = BahdanauAttnDecoderRNN(hidden_size, output_lang.n_words, n_layers=1, dropout_p=0.1).to(device)
 
 ##UNCOMMENT TO TRAIN THE MODEL
-trainIters(args, input_lang, output_lang, pairs, encoder1, decoder1, no_of_iterations, print_every=5000)
+trainIters(args, encoder1, decoder1, no_of_iterations, print_every=5000)
 
 #encoder1.load_state_dict(torch.load("encoder.pth"))
 #attn_decoder1.load_state_dict(torch.load("attn_decoder.pth"))

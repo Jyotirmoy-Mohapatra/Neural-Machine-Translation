@@ -15,8 +15,8 @@ class Lang:
         self.name = name
         self.word2index = {}
         self.word2count = {}
-        self.index2word = {0: "SOS", 1: "EOS"}
-        self.n_words = 2  # Count SOS and EOS
+        self.index2word = {0: "SOS", 1: "EOS", 2:"UNK"}
+        self.n_words = 3  # Count SOS and EOS
 
     def addSentence(self, sentence):
         for word in sentence.split(' '):
@@ -32,7 +32,7 @@ class Lang:
             self.word2count[word] += 1
 
     def indexesFromSentence(self, sentence):
-        return [self.word2index[word] for word in sentence.split(' ')]
+        return [(self.word2index[word] if word in self.word2index else UNK_token) for word in sentence.split(' ')]
 
 
     def tensorFromSentence(self, sentence):
@@ -48,7 +48,7 @@ def filterPair(p):
 def filterPairs(pairs):
     return [pair for pair in pairs if filterPair(pair)]
 
-def readLangs(lang1, lang2, reverse=False):
+def readLangs(lang1, lang2, dataset, reverse=False):
     print("Reading lines...")
 
     # Read the file and split into lines
@@ -93,8 +93,29 @@ def prepareData(lang1, lang2, reverse=False):
     #print(maxsent)
     return input_lang, output_lang, pairs
 
+#create a function that reads the dev set and generates vi-en sentence pairs and filters them
+def dataforEval(dataset,lang1,lang2):
+    print("Reading lines...")
 
+    # Read the file and split into lines
+    lines1 = open(scratch+'iwslt-vi-en/'+dataset+'.tok.%s' % (lang1), encoding='utf-8').\
+        read().strip().split('\n')
+    lines2 = open(scratch+'iwslt-vi-en/'+dataset+'.tok.%s' % (lang2), encoding='utf-8').\
+        read().strip().split('\n')
 
+    # Split every line into pairs and normalize
+    epairs = [[l1, l2] for l1,l2 in zip(lines1,lines2)]
+    epairs = filterPairs(epairs)
+    #source = []
+    ref = []
 
-def tensorsFromPair(pair,input_lang,output_lang):
+    for i in range(len(epairs)):
+        #source.append(pairs[i][0])
+        ref.append(epairs[i][1])
+    return epairs, [ref]
+
+input_lang, output_lang, pairs = prepareData('vi', 'en', False)
+print(random.choice(pairs))
+
+def tensorsFromPair(pair):
     return (input_lang.tensorFromSentence(pair[0]), output_lang.tensorFromSentence(pair[1]))
