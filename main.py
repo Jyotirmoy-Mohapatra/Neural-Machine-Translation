@@ -55,7 +55,7 @@ for p in decoder.parameters():
 #attn_decoder1 = BahdanauAttnDecoderRNN(hidden_size, output_lang.n_words, n_layers=1, dropout_p=0.1).to(device)
 
 ##UNCOMMENT TO TRAIN THE MODEL
-#trainIters(args, encoder1, decoder1, print_every=5000)
+#trainIters(args, encoder1, decoder1, no_of_iterations, print_every=5000)
 
 #encoder1.load_state_dict(torch.load("encoder.pth"))
 #attn_decoder1.load_state_dict(torch.load("attn_decoder.pth"))
