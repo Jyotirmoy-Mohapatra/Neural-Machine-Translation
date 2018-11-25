@@ -1,17 +1,18 @@
 import os
 import torch
 import argparse
-#from utils.train import *
+from utils.train import *
 from Decoder.DecoderRNN import *
 from Encoder.encoderRNN import *
-from Encoder.Transformer_Encoder import *
-from Decoder.Transformer_Decoder import *
+from Transformer import *
 from Decoder.AttnDecoderRNN import *
+#from utils.Data_Loader_Transformer import *
 #device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 #hidden_size = 256
 
 #input_lang, output_lang, pairs = prepareData('vi', 'en', False)
 #print(random.choice(pairs))
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 parser = argparse.ArgumentParser(description='PyTorch SNLI')
 parser.add_argument('--output', type=str, default='', metavar='P',
                     help="path to store saved models")
@@ -25,32 +26,32 @@ if len(args.output)>0:
     else:
         print("File Creation Success!")
 """
-d_model=512
-h=8
-d_ff=512
-dropout=0.1
-N=6
 
-c = copy.deepcopy
-attn = MultiHeadedAttention(h, d_model)
-ff = PositionwiseFeedForward(d_model, d_ff, dropout)
-position = PositionalEncoding(d_model, dropout)
+#devices = [0, 1, 2, 3]
+pad_idx = TGT.vocab.stoi["<blank>"]
+model = make_model(len(SRC.vocab), len(TGT.vocab), N=6)
+criterion = LabelSmoothing(size=len(TGT.vocab), padding_idx=pad_idx, smoothing=0.1)
+if torch.cuda.is_available():
+	model.to(device)
+	criterion.to(device)
+BATCH_SIZE = 12000
+train_iter = MyIterator(train, batch_size=BATCH_SIZE, device=0, \
+                            repeat=False, sort_key=lambda x: (len(x.src), len(x.trg)), \
+                            batch_size_fn=batch_size_fn, train=True)
+valid_iter = MyIterator(val, batch_size=BATCH_SIZE, device=0, \
+                            repeat=False, sort_key=lambda x: (len(x.src), len(x.trg)), \
+                            batch_size_fn=batch_size_fn, train=False)
+#model_par = nn.DataParallel(model, device_ids=devices)
+
+trainItersTransformer(args, model, train_iter, valid_iter, criterion, pad_idx)
+
 
 #encoder1 = EncoderRNN(input_lang.n_words, hidden_size).to(device)
-encoder1 = Transformer_Encoder(EncoderLayer(d_model, c(attn), c(ff), dropout), N)
 #.to(device)
 
 #decoder1 = DecoderRNN(hidden_size, output_lang.n_words).to(device)
 #decoder1 = AttnDecoderRNN(hidden_size, output_lang.n_words).to(device)
-decoder1 = Transformer_Decoder(DecoderLayer(d_model, c(attn), c(attn), c(ff), dropout), N).to(device)
 
-for p in encoder.parameters():
-    if p.dim() > 1:
-        nn.init.xavier_uniform(p)
-
-for p in decoder.parameters():
-    if p.dim() > 1:
-        nn.init.xavier_uniform(p)
 # attn_decoder1 = AttnDecoderRNN(hidden_size, output_lang.n_words, dropout_p=0.1).to(device)
 #attn_decoder1 = BahdanauAttnDecoderRNN(hidden_size, output_lang.n_words, n_layers=1, dropout_p=0.1).to(device)
 
