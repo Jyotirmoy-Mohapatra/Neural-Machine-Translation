@@ -18,7 +18,7 @@ TGT = data.Field(tokenize=tokenize_en, init_token = BOS_WORD,
 
 MAX_LEN = 100
 train, val, test = datasets.TranslationDataset.splits(
-    exts=('.vi', '.en'), fields=(SRC, TGT), path='iwslt-vi-en-processed/',train='train.tok',validation='dev.tok',test='test.tok',
+    exts=('.vi', '.en'), fields=(SRC, TGT), path='Neural-Machine-Translation/iwslt-vi-en-processed/',train='train.tok',validation='dev.tok',test='test.tok',
     filter_pred=lambda x: len(vars(x)['src']) <= MAX_LEN and 
         len(vars(x)['trg']) <= MAX_LEN,)
 MIN_FREQ = 2

@@ -7,8 +7,8 @@ from torch import optim
 import torch.nn.functional as F
 from Transformer import *
 #from utils.Data_Loader_Transformer import *
-
-
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+#device=torch.device("cpu")
 
 
 #teacher_forcing_ratio = 0.5
@@ -19,8 +19,16 @@ def run_epoch(args,data_iter, model, loss_compute):
     total_loss = 0
     tokens = 0
     for i, batch in enumerate(data_iter):
+        batch.src=batch.src.to(device)
+        batch.trg=batch.trg.to(device)
+        batch.trg_mask=batch.trg_mask.to(device)
+        batch.src_mask=batch.src_mask.to(device)
+        batch.trg_y=batch.trg_y.float().to(device)
+        batch.ntokens=batch.ntokens.float().to(device)
+        #print(time.time()-start_time)
         out = model.forward(batch.src, batch.trg, 
                             batch.src_mask, batch.trg_mask)
+        start_time=time.time()
         loss = loss_compute(out, batch.trg_y, batch.ntokens)
         total_loss += loss
         total_tokens += batch.ntokens
@@ -123,12 +131,11 @@ def trainIters(args, input_lang, output_lang, pairs, encoder, decoder, n_iters, 
         loss = train(input_tensor, target_tensor, encoder,decoder, encoder_optimizer, decoder_optimizer, criterion)
         print_loss_total += loss
         plot_loss_total += loss
-
         if iter % print_every == 0:
             torch.save(encoder.state_dict(), scratch+args.output+"encoder.pth")
             torch.save(decoder.state_dict(), scratch+args.output+"decoder.pth")
             print_loss_avg = print_loss_total / print_every
-            print_loss_total = 0
+            print_loss_total = -1
             print('%s (%d %d%%) %.4f' % (timeSince(start, iter / n_iters),
                                          iter, iter / n_iters * 100, print_loss_avg))
 
@@ -139,27 +146,33 @@ def trainIters(args, input_lang, output_lang, pairs, encoder, decoder, n_iters, 
 
     showPlot(args, plot_losses)
 
-def trainItersTransformer(args,model,train_iter,valid_iter,criterion, pad_idx, n_iters=75000,plot_every=100,save_every=15000):
+def trainItersTransformer(args,model,train_iter,valid_iter,criterion, pad_idx, n_iters=1,plot_every=10,save_every=10):
     plot_losses = 0
     train_plot_losses=0
     plot_loss_list=[]
     train_plot_loss_list=[]
-    model_opt = NoamOpt(model.src_embed[0].d_model, 1, 2000,
+    model_opt = NoamOpt(model.src_embed[0].d_model, 1, 200,
             torch.optim.Adam(model.parameters(), lr=0, betas=(0.9, 0.98), eps=1e-9))
     for epoch in range(1,n_iters+1):
+        print("\nEpoch number:",epoch)
+        #start_time_train=time.time()
         model.train()
         train_loss=run_epoch(args,(rebatch(pad_idx, b) for b in train_iter), 
                   model, 
                   SimpleLossCompute(model.generator, criterion, opt=model_opt))
+        #print("Time to train:",epoch,time.time()-start_time_train)
+        #start_time_val=time.time()
+
         model.eval()
         loss = run_epoch(args,(rebatch(pad_idx, b) for b in valid_iter), 
                           model, 
                           SimpleLossCompute(model.generator, criterion, opt=None))
+        #print("Time to validate:",epoch,time.time()-start_time_val)
         plot_losses+=loss
         train_plot_losses+=train_loss
         if epoch % save_every==0:
-            print("\n\nEpoch number:",epoch,"\n... Saving model.")
-            torch.save(model.state_dict(), scratch+args.output+epoch+"_transformer_model.pth")
+            print("... Saving model.")
+            torch.save(model.state_dict(), scratch+args.output+str(epoch)+"_transformer_model.pth")
         if epoch % plot_every==0:
             plot_loss_avg=plot_losses/plot_every
             train_plot_loss_avg=train_plot_losses/plot_every

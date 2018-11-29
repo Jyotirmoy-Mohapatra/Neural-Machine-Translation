@@ -4,11 +4,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 import math, copy, time
 from torch.autograd import Variable
-import matplotlib.pyplot as plt
-import seaborn
-seaborn.set_context(context="talk")
+#import matplotlib.pyplot as plt
+#import seaborn
+#seaborn.set_context(context="talk")
 from utils.Data_Loader_Torchtext import *
-
 
 
 class EncoderDecoder(nn.Module):
@@ -137,8 +136,8 @@ def subsequent_mask(size):
     subsequent_mask = np.triu(np.ones(attn_shape), k=1).astype('uint8')
     return torch.from_numpy(subsequent_mask) == 0
 
-plt.figure(figsize=(5,5))
-plt.imshow(subsequent_mask(20)[0])
+#plt.figure(figsize=(5,5))
+#plt.imshow(subsequent_mask(20)[0])
 
 def attention(query, key, value, mask=None, dropout=None):
     "Compute 'Scaled Dot Product Attention'"
@@ -203,6 +202,7 @@ class Embeddings(nn.Module):
         self.d_model = d_model
 
     def forward(self, x):
+        #print(x.type())
         return self.lut(x) * math.sqrt(self.d_model)
 
 class PositionalEncoding(nn.Module):
@@ -226,11 +226,11 @@ class PositionalEncoding(nn.Module):
                          requires_grad=False)
         return self.dropout(x)
 
-plt.figure(figsize=(15, 5))
-pe = PositionalEncoding(20, 0)
-y = pe.forward(Variable(torch.zeros(1, 100, 20)))
-plt.plot(np.arange(100), y[0, :, 4:8].data.numpy())
-plt.legend(["dim %d"%p for p in [4,5,6,7]])
+#plt.figure(figsize=(15, 5))
+#pe = PositionalEncoding(20, 0)
+#y = pe.forward(Variable(torch.zeros(1, 100, 20)))
+#plt.plot(np.arange(100), y[0, :, 4:8].data.numpy())
+#plt.legend(["dim %d"%p for p in [4,5,6,7]])
 
 def make_model(src_vocab, tgt_vocab, N=6, 
                d_model=512, d_ff=2048, h=8, dropout=0.1):
@@ -250,7 +250,7 @@ def make_model(src_vocab, tgt_vocab, N=6,
     # Initialize parameters with Glorot / fan_avg.
     for p in model.parameters():
         if p.dim() > 1:
-            nn.init.xavier_uniform(p)
+            nn.init.xavier_uniform_(p)
     return model
 
 class Batch:
@@ -333,10 +333,12 @@ class LabelSmoothing(nn.Module):
         assert x.size(1) == self.size
         true_dist = x.data.clone()
         true_dist.fill_(self.smoothing / (self.size - 2))
-        true_dist.scatter_(1, target.data.unsqueeze(1), self.confidence)
+        true_dist.scatter_(1, target.data.unsqueeze(1).long(), self.confidence)
         true_dist[:, self.padding_idx] = 0
         mask = torch.nonzero(target.data == self.padding_idx)
-        if mask.dim() > 0:
+        if mask.dim() > 0 and len(mask) > 0:
+            #print(mask.dim())
+            #print(mask)
             true_dist.index_fill_(0, mask.squeeze(), 0.0)
         self.true_dist = true_dist
         return self.criterion(x, Variable(true_dist, requires_grad=False))
@@ -349,14 +351,17 @@ class SimpleLossCompute:
         self.opt = opt
         
     def __call__(self, x, y, norm):
+        start_time=time.time()
         x = self.generator(x)
-        loss = self.criterion(x.contiguous().view(-1, x.size(-1)), 
-                              y.contiguous().view(-1)) / norm
+        #print(x.type())
+        #print(y.type())
+        #print(norm)
+        loss = self.criterion(x.contiguous().view(-1, x.size(-1)), y.contiguous().view(-1)) / norm
         loss.backward()
         if self.opt is not None:
             self.opt.step()
             self.opt.optimizer.zero_grad()
-        return loss.data[0] * norm
+        return loss.data.item() * norm
 
 class MultiGPULossCompute:
     "A multi-gpu loss compute and train function."

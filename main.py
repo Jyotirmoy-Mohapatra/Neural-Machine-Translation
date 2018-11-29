@@ -1,5 +1,4 @@
 import os
-import torch
 import argparse
 from utils.train import *
 from Decoder.DecoderRNN import *
@@ -13,6 +12,7 @@ from Decoder.AttnDecoderRNN import *
 #input_lang, output_lang, pairs = prepareData('vi', 'en', False)
 #print(random.choice(pairs))
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+#device=torch.device("cpu")
 parser = argparse.ArgumentParser(description='PyTorch SNLI')
 parser.add_argument('--output', type=str, default='', metavar='P',
                     help="path to store saved models")
@@ -29,12 +29,11 @@ if len(args.output)>0:
 
 #devices = [0, 1, 2, 3]
 pad_idx = TGT.vocab.stoi["<blank>"]
-model = make_model(len(SRC.vocab), len(TGT.vocab), N=6)
+model = make_model(len(SRC.vocab), len(TGT.vocab), N=1)
 criterion = LabelSmoothing(size=len(TGT.vocab), padding_idx=pad_idx, smoothing=0.1)
-if torch.cuda.is_available():
-	model.to(device)
-	criterion.to(device)
-BATCH_SIZE = 12000
+model.to(device)
+criterion.to(device)
+BATCH_SIZE = 2500
 train_iter = MyIterator(train, batch_size=BATCH_SIZE, device=0, \
                             repeat=False, sort_key=lambda x: (len(x.src), len(x.trg)), \
                             batch_size_fn=batch_size_fn, train=True)
@@ -43,7 +42,7 @@ valid_iter = MyIterator(val, batch_size=BATCH_SIZE, device=0, \
                             batch_size_fn=batch_size_fn, train=False)
 #model_par = nn.DataParallel(model, device_ids=devices)
 
-trainItersTransformer(args, model, train_iter, valid_iter, criterion, pad_idx)
+trainItersTransformer(args, model, train_iter, valid_iter, criterion, pad_idx,n_iters=110)
 
 
 #encoder1 = EncoderRNN(input_lang.n_words, hidden_size).to(device)
