@@ -146,12 +146,12 @@ def trainIters(args, input_lang, output_lang, pairs, encoder, decoder, n_iters, 
 
     showPlot(args, plot_losses)
 
-def trainItersTransformer(args,model,train_iter,valid_iter,criterion, pad_idx, n_iters=1,plot_every=10,save_every=10):
+def trainItersTransformer(args,model,train_iter,valid_iter,criterion, pad_idx, n_iters=1,plot_every=1,save_every=10,warmup=2000):
     plot_losses = 0
     train_plot_losses=0
     plot_loss_list=[]
     train_plot_loss_list=[]
-    model_opt = NoamOpt(model.src_embed[0].d_model, 1, 200,
+    model_opt = NoamOpt(model.src_embed[0].d_model, 1, warmup,
             torch.optim.Adam(model.parameters(), lr=0, betas=(0.9, 0.98), eps=1e-9))
     for epoch in range(1,n_iters+1):
         print("\nEpoch number:",epoch)

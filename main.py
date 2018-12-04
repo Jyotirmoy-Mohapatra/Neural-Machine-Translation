@@ -29,7 +29,7 @@ if len(args.output)>0:
 
 #devices = [0, 1, 2, 3]
 pad_idx = TGT.vocab.stoi["<blank>"]
-model = make_model(len(SRC.vocab), len(TGT.vocab), N=1)
+model = make_model(len(SRC.vocab), len(TGT.vocab), N=6)
 criterion = LabelSmoothing(size=len(TGT.vocab), padding_idx=pad_idx, smoothing=0.1)
 model.to(device)
 criterion.to(device)
@@ -42,7 +42,7 @@ valid_iter = MyIterator(val, batch_size=BATCH_SIZE, device=0, \
                             batch_size_fn=batch_size_fn, train=False)
 #model_par = nn.DataParallel(model, device_ids=devices)
 
-trainItersTransformer(args, model, train_iter, valid_iter, criterion, pad_idx,n_iters=110)
+trainItersTransformer(args, model, train_iter, valid_iter, criterion, pad_idx,n_iters=100,plot_every=1,save_every=10,warmup=20)
 
 
 #encoder1 = EncoderRNN(input_lang.n_words, hidden_size).to(device)

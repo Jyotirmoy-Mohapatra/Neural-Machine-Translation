@@ -44,7 +44,7 @@ test_iter = MyIterator(test, batch_size=BATCH_SIZE, device=0, \
 #test_iter.TRG=test_iter.TRG.to(device)
 #test_iter.src=test_iter.src.to(device)
 
-model = make_model(len(SRC.vocab), len(TGT.vocab), N=1)
+model = make_model(len(SRC.vocab), len(TGT.vocab), N=6)
 model.to(device)
 model.load_state_dict(torch.load(args.model))
 f_out=open(args.output,'w')
