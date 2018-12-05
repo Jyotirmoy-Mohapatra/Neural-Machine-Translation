@@ -2,6 +2,8 @@ from io import open
 import random
 import torch
 from params import *
+from torch.utils.data import Dataset
+import numpy as np
 """
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -38,7 +40,7 @@ class Lang:
     def tensorFromSentence(self, sentence):
         indexes = self.indexesFromSentence(sentence)
         indexes.append(EOS_token)
-        return torch.tensor(indexes, dtype=torch.long, device=device).view(-1, 1)
+        return torch.tensor(indexes, dtype=torch.long, device=device)
 
 def filterPair(p):
     return len(p[0].split(' ')) < MAX_LENGTH and \
@@ -119,3 +121,75 @@ print(random.choice(pairs))
 
 def tensorsFromPair(pair):
     return (input_lang.tensorFromSentence(pair[0]), output_lang.tensorFromSentence(pair[1]))
+
+
+
+def nmt_collate_func(batch):
+    """
+    Customized function for DataLoader that dynamically pads the batch so that all 
+    data have the same length
+    """
+    data_list = []
+    label_list = []
+    length_list = []
+    #print("collate batch: ", batch[0][0])
+    #batch[0][0] = batch[0][0][:MAX_SENTENCE_LENGTH]
+    for datum in batch:
+        label_list.append(datum[2])
+        length_list.append(datum[1])
+    # padding
+    for datum in batch:
+        padded_vec = np.pad(np.array(datum[0]), 
+                                pad_width=((0,MAX_LENGTH-datum[1])), 
+                                mode="constant", constant_values=0)
+        data_list.append(padded_vec)
+    #print(label_list[:10])
+    print(label_list[:5])
+    print(data_list[:5])
+    data_list = torch.tensor(data_list)
+    length_list = torch.LongTensor(length_list)
+    #label_list = torch.tensor(label_list)
+    return [data_list, length_list, label_list]
+
+class NMTDataset(Dataset):
+    """
+    Class that represents a train/validation/test dataset that's readable for PyTorch
+    Note that this class inherits torch.utils.data.Dataset
+    """
+    
+    def __init__(self, data_list, target_list):
+        """
+        @param data_list: list of source language tokens 
+        @param target_list: list of targets language tokens
+        """
+        self.data_list = data_list
+        self.target_list = target_list
+        #print(len(self.data_list),len(self.target_list))
+        assert (len(self.data_list) == len(self.target_list))
+
+    def __len__(self):
+        return len(self.data_list)
+        
+    def __getitem__(self, key):
+        """
+        Triggered when you call dataset[i]
+        """
+        token_idx = self.data_list[key][:MAX_LENGTH]
+        #print (token_idx)
+        label = self.target_list[key]
+        return [token_idx, len(token_idx), label]
+
+input_indices = []
+target_indices = []
+
+for pair in pairs:
+    pair_t = tensorsFromPair(pair)
+    input_indices.append(pair_t[0])
+    target_indices.append(pair_t[1])
+
+#print(input_indices[:5])
+train_dataset = NMTDataset(input_indices, target_indices)
+train_loader = torch.utils.data.DataLoader(dataset=train_dataset, 
+                                           batch_size=BATCH_SIZE,
+                                           collate_fn=nmt_collate_func,
+                                           shuffle=True)

@@ -19,14 +19,16 @@ class EncoderRNN(nn.Module):
 		
     
 	def forward(self, X, hidden):
-		batch_size = 1
+		#print(X.shape)
+		batch_size = X.size(1)
 		#reset hidden state here
 		if torch.cuda.is_available():
 			self.hidden = self.initHidden(batch_size).cuda()
 		else:
 			self.hidden = self.initHidden(batch_size)
 
-		embedded = self.embedding(X).view(1, 1, -1)
+		#print(hidden.shape)
+		embedded = self.embedding(X)
 		output = embedded
 		output, self.hidden = self.gru(output, hidden)
 		if self.bi:
