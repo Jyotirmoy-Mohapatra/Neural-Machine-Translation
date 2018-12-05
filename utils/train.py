@@ -44,57 +44,36 @@ def run_epoch(args,data_iter, model, loss_compute):
 
 
 def train(input_tensor, target_tensor, encoder, decoder, encoder_optimizer, decoder_optimizer, criterion, max_length=MAX_LENGTH):
-    encoder_hidden = encoder.initHidden(1)
+    encoder_hidden = encoder.initHidden(input_tensor.size(1))
 
     encoder_optimizer.zero_grad()
     decoder_optimizer.zero_grad()
 
-    input_length = input_tensor.size(0)
-    target_length = target_tensor.size(0)
-
-    encoder_outputs = torch.zeros(max_length, encoder.hidden_size, device=device)
-
+    max_len = target_tensor.shape[0]
+    batch_size = target_tensor.shape[1]
+    trg_vocab_size = len(TGT.vocab)
+    
     loss = 0
-
-    for ei in range(input_length):
-        encoder_output, encoder_hidden = encoder(
-            input_tensor[ei], encoder_hidden)
-        #print("\n", encoder_output.size(), encoder_outputs.size(), "\n")
-        encoder_outputs[ei] = encoder_output[0, 0]
-
-    decoder_input = torch.tensor([[SOS_token]], device=device)
-    encoder_hidden=torch.sum(encoder_hidden,dim=0,keepdim=True)
+    
+    cell, hidden = encoder(input_tensor, encoder_hidden)
+    outputs = torch.zeros(max_len, batch_size, trg_vocab_size).cuda()
+    decoder_input = target_tensor[0,:].view(1,-1)
     decoder_hidden = encoder_hidden
-
-    use_teacher_forcing = True if random.random() < teacher_forcing_ratio else False
-
-    if use_teacher_forcing:
-        # Teacher forcing: Feed the target as the next input
-        for di in range(target_length):
-            decoder_output, decoder_hidden, decoder_attention = decoder(
-                decoder_input, decoder_hidden, encoder_outputs)
-            
-            loss += criterion(decoder_output, target_tensor[di])
-            decoder_input = target_tensor[di]  # Teacher forcing
-
-    else:
-        # Without teacher forcing: use its own predictions as the next input
-        for di in range(target_length):
-            decoder_output, decoder_hidden, decoder_attention = decoder(
-                decoder_input, decoder_hidden, encoder_outputs)
-            topv, topi = decoder_output.topk(1)
-            decoder_input = topi.squeeze().detach()  # detach from history as input
-            
-            loss += criterion(decoder_output, target_tensor[di])
-            if decoder_input.item() == EOS_token:
-                break
-
+    for t in range(1, max_len):    
+        output, hidden, attn = decoder(decoder_input, hidden, cell)
+        outputs[t] = output
+        teacher_force = random.random() < teacher_forcing_ratio
+        top1 = output.max(1)[1].view(1,-1)
+        decoder_input = (target_tensor[t].view(1,-1) if teacher_force else top1)
+ 
+    
+    loss = criterion(outputs[1:].view(-1, outputs.shape[2]), target_tensor[1:].view(-1))
     loss.backward()
 
     encoder_optimizer.step()
     decoder_optimizer.step()
 
-    return loss.item() / target_length
+    return loss.item()
 
 def asMinutes(s):
     m = math.floor(s / 60)
@@ -109,49 +88,101 @@ def timeSince(since, percent):
     rs = es - s
     return '%s (- %s)' % (asMinutes(s), asMinutes(rs))
 
+def evaluateModel(encoder, decoder,iterator, criterion):
+    
+    epoch_loss = 0
+    
+    with torch.no_grad():
+    
+        for i, batch in enumerate(iterator):
+
+            src = batch.src
+            trg = batch.trg
+            encoder_hidden = encoder.initHidden(src.size(1))
+            #output = model(src, trg, 0) #turn off teacher forcing
+            batch_size = trg.shape[1]
+            max_len = trg.shape[0]
+            trg_vocab_size = len(TGT.vocab)
+        
+            #tensor to store decoder outputs
+            outputs = torch.zeros(max_len, batch_size, trg_vocab_size).cuda()
+        
+            #last hidden state of the encoder is used as the initial hidden state of the decoder
+            cell, hidden = encoder(src, encoder_hidden)
+            decoder_input = trg[0,:].view(1,-1)
+            decoder_hidden = encoder_hidden
+            #first input to the decoder is the <sos> tokens
+         
+            for t in range(1, max_len):
+            
+                output, hidden, attn = decoder(decoder_input, hidden, cell)
+                outputs[t] = output
+                top1 = output.max(1)[1].view(1,-1)
+                decoder_input = top1
+
+            loss = criterion(outputs[1:].view(-1, outputs.shape[2]), trg[1:].view(-1))
+
+            epoch_loss += loss.item()
+        
+    return epoch_loss / len(iterator)
 
 
-def trainIters(args, input_lang, output_lang, pairs, encoder, decoder, n_iters, print_every=1000, plot_every=100, learning_rate=0.001, transformer=False):
+def trainIters(args, train_iter, valid_iter, encoder, decoder, print_every=10, plot_every=100, learning_rate=0.001):
     start = time.time()
     plot_losses = []
     print_loss_total = 0  # Reset every print_every
     plot_loss_total = 0  # Reset every plot_every
-
-
+    best_loss = float('inf')
+    #print(len(train_iter))
     encoder_optimizer = optim.SGD(encoder.parameters(), lr=learning_rate)
     decoder_optimizer = optim.SGD(decoder.parameters(), lr=learning_rate)
-    training_pairs = [tensorsFromPair(random.choice(pairs),input_lang,output_lang)
-                      for i in range(n_iters)]
+    #training_pairs = [tensorsFromPair(random.choice(pairs))
+    #                  for i in range(n_iters)]
     criterion = nn.NLLLoss()
-
     for iter in range(1, n_iters + 1):
-        training_pair = training_pairs[iter - 1]
-        input_tensor = training_pair[0]
-        target_tensor = training_pair[1]
-        loss = train(input_tensor, target_tensor, encoder,decoder, encoder_optimizer, decoder_optimizer, criterion)
-        print_loss_total += loss
-        plot_loss_total += loss
+        #training_pair = training_pairs[iter - 1]
+        #input_tensor = training_pair[0]
+        #target_tensor = training_pair[1]
+        train_loss = 0
+        #print("Epoch: ",iter)
+        for i, batch in enumerate(train_iter):
+            input_tensor = batch.src
+            target_tensor = batch.trg
+            loss = train(input_tensor, target_tensor, encoder,decoder, encoder_optimizer, decoder_optimizer, criterion)
+            print_loss_total += loss
+            plot_loss_total += loss
+            train_loss += loss
+
+        train_loss = train_loss/len(train_iter)
+        valid_loss = evaluateModel(encoder, decoder, valid_iter, criterion)
+
+        print(f'| Epoch: {iter+1:03} | Train Loss: {train_loss:.3f} | Train PPL: {math.exp(train_loss):7.3f} | Val. Loss: {valid_loss:.3f} | Val. PPL: {math.exp(valid_loss):7.3f} |')
+        """
         if iter % print_every == 0:
             torch.save(encoder.state_dict(), scratch+args.output+"encoder.pth")
             torch.save(decoder.state_dict(), scratch+args.output+"decoder.pth")
-            print_loss_avg = print_loss_total / print_every
-            print_loss_total = -1
+            print_loss_avg = epoch_loss / print_every
+            print_loss_total = 0
             print('%s (%d %d%%) %.4f' % (timeSince(start, iter / n_iters),
                                          iter, iter / n_iters * 100, print_loss_avg))
-
-        if iter % plot_every == 0:
-            plot_loss_avg = plot_loss_total / plot_every
-            plot_losses.append(plot_loss_avg)
-            plot_loss_total = 0
+        """
+        if valid_loss < best_loss:
+            best_loss = valid_loss
+            torch.save(encoder.state_dict(), scratch+args.output+"encoder.pth")
+            torch.save(decoder.state_dict(), scratch+args.output+"decoder.pth")
+        #if iter % plot_every == 0:
+        plot_loss_avg = plot_loss_total / plot_every
+        plot_losses.append(plot_loss_avg)
+        plot_loss_total = 0
 
     showPlot(args, plot_losses)
 
-def trainItersTransformer(args,model,train_iter,valid_iter,criterion, pad_idx, n_iters=1,plot_every=10,save_every=10):
+def trainItersTransformer(args,model,train_iter,valid_iter,criterion, pad_idx, n_iters=1,plot_every=1,save_every=10,warmup=2000):
     plot_losses = 0
     train_plot_losses=0
     plot_loss_list=[]
     train_plot_loss_list=[]
-    model_opt = NoamOpt(model.src_embed[0].d_model, 1, 200,
+    model_opt = NoamOpt(model.src_embed[0].d_model, 1, warmup,
             torch.optim.Adam(model.parameters(), lr=0, betas=(0.9, 0.98), eps=1e-9))
     for epoch in range(1,n_iters+1):
         print("\nEpoch number:",epoch)
