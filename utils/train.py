@@ -1,5 +1,6 @@
 import time
 import math
+import random
 from utils.plot import *
 #from utils.data import *
 import torch.nn as nn
@@ -156,7 +157,7 @@ def trainIters(args, train_iter, valid_iter, encoder, decoder, print_every=10, p
         train_loss = train_loss/len(train_iter)
         valid_loss = evaluateModel(encoder, decoder, valid_iter, criterion)
 
-        print(f'| Epoch: {iter+1:03} | Train Loss: {train_loss:.3f} | Train PPL: {math.exp(train_loss):7.3f} | Val. Loss: {valid_loss:.3f} | Val. PPL: {math.exp(valid_loss):7.3f} |')
+        print(f'| Epoch: {iter+0:03} | Train Loss: {train_loss:.3f} | Train PPL: {math.exp(train_loss):7.3f} | Val. Loss: {valid_loss:.3f} | Val. PPL: {math.exp(valid_loss):7.3f} |')
         """
         if iter % print_every == 0:
             torch.save(encoder.state_dict(), scratch+args.output+"encoder.pth")
