@@ -44,7 +44,7 @@ def run_epoch(args,data_iter, model, loss_compute):
 
 
 
-def train(input_tensor, target_tensor, encoder, decoder, encoder_optimizer, decoder_optimizer, criterion, max_length=MAX_LENGTH):
+def train(input_tensor, target_tensor, encoder, decoder, encoder_optimizer, decoder_optimizer,encoder_scheduler, decoder_scheduler, criterion, max_length=MAX_LENGTH):
     encoder_hidden = encoder.initHidden(input_tensor.size(1))
 
     encoder_optimizer.zero_grad()
@@ -65,7 +65,7 @@ def train(input_tensor, target_tensor, encoder, decoder, encoder_optimizer, deco
         outputs[t] = output
         teacher_force = random.random() < teacher_forcing_ratio
         top1 = output.max(1)[1].view(1,-1)
-        decoder_input = (target_tensor[t].view(1,-1) if teacher_force else top1)
+        decoder_input = (target_tensor[t].view(1,-1) if teacher_force else top1.detach())
  
     
     loss = criterion(outputs[1:].view(-1, outputs.shape[2]), target_tensor[1:].view(-1))
@@ -135,11 +135,12 @@ def trainIters(args, train_iter, valid_iter, encoder, decoder, print_every=10, p
     plot_loss_total = 0  # Reset every plot_every
     best_loss = float('inf')
     #print(len(train_iter))
-    encoder_optimizer = optim.SGD(encoder.parameters(), lr=learning_rate)
-    decoder_optimizer = optim.SGD(decoder.parameters(), lr=learning_rate)
+ 
+    encoder_optimizer = optim.Adam(encoder.parameters(), lr=learning_rate)
+    decoder_optimizer = optim.Adam(decoder.parameters(), lr=learning_rate)
     encoder_scheduler = optim.lr_scheduler.StepLR(encoder_optimizer, step_size=3, gamma=0.5)
     decoder_scheduler = optim.lr_scheduler.StepLR(decoder_optimizer, step_size=3, gamma=0.5)
-    
+
     #training_pairs = [tensorsFromPair(random.choice(pairs))
     #                  for i in range(n_iters)]
     criterion = nn.NLLLoss()
@@ -154,7 +155,7 @@ def trainIters(args, train_iter, valid_iter, encoder, decoder, print_every=10, p
         for i, batch in enumerate(train_iter):
             input_tensor = batch.src
             target_tensor = batch.trg
-            loss = train(input_tensor, target_tensor, encoder,decoder, encoder_optimizer, decoder_optimizer, criterion)
+            loss = train(input_tensor, target_tensor, encoder,decoder, encoder_optimizer, decoder_optimizer,encoder_scheduler, decoder_scheduler,criterion)
             print_loss_total += loss
             plot_loss_total += loss
             train_loss += loss
@@ -165,6 +166,7 @@ def trainIters(args, train_iter, valid_iter, encoder, decoder, print_every=10, p
         decoder_scheduler.step()
 
         print(f'| Epoch: {iter+0:03} | Train Loss: {train_loss:.3f} | Train PPL: {math.exp(train_loss):7.3f} | Val. Loss: {valid_loss:.3f} | Val. PPL: {math.exp(valid_loss):7.3f} |')
+        
         """
         if iter % print_every == 0:
             torch.save(encoder.state_dict(), scratch+args.output+"encoder.pth")
