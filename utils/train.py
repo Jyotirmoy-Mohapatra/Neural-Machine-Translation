@@ -137,15 +137,20 @@ def trainIters(args, train_iter, valid_iter, encoder, decoder, print_every=10, p
     #print(len(train_iter))
     encoder_optimizer = optim.SGD(encoder.parameters(), lr=learning_rate)
     decoder_optimizer = optim.SGD(decoder.parameters(), lr=learning_rate)
+    encoder_scheduler = optim.lr_scheduler.StepLR(encoder_optimizer, step_size=3, gamma=0.5)
+    decoder_scheduler = optim.lr_scheduler.StepLR(decoder_optimizer, step_size=3, gamma=0.5)
+    
     #training_pairs = [tensorsFromPair(random.choice(pairs))
     #                  for i in range(n_iters)]
     criterion = nn.NLLLoss()
+    print("Before epoch begins")
     for iter in range(1, n_iters + 1):
         #training_pair = training_pairs[iter - 1]
         #input_tensor = training_pair[0]
         #target_tensor = training_pair[1]
         train_loss = 0
         #print("Epoch: ",iter)
+        print(len(train_iter)) 
         for i, batch in enumerate(train_iter):
             input_tensor = batch.src
             target_tensor = batch.trg
@@ -156,6 +161,8 @@ def trainIters(args, train_iter, valid_iter, encoder, decoder, print_every=10, p
 
         train_loss = train_loss/len(train_iter)
         valid_loss = evaluateModel(encoder, decoder, valid_iter, criterion)
+        encoder_scheduler.step()
+        decoder_scheduler.step()
 
         print(f'| Epoch: {iter+0:03} | Train Loss: {train_loss:.3f} | Train PPL: {math.exp(train_loss):7.3f} | Val. Loss: {valid_loss:.3f} | Val. PPL: {math.exp(valid_loss):7.3f} |')
         """
@@ -175,7 +182,7 @@ def trainIters(args, train_iter, valid_iter, encoder, decoder, print_every=10, p
         plot_loss_avg = plot_loss_total / plot_every
         plot_losses.append(plot_loss_avg)
         plot_loss_total = 0
-
+        
     showPlot(args, plot_losses)
 
 def trainItersTransformer(args,model,train_iter,valid_iter,criterion, pad_idx, n_iters=1,plot_every=1,save_every=10,warmup=2000):
