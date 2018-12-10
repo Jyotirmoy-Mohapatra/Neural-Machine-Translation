@@ -63,10 +63,10 @@ def train(input_tensor, target_tensor, encoder, decoder, encoder_optimizer, deco
     for t in range(1, max_len):    
         output, hidden, attn = decoder(decoder_input, hidden, cell)
         outputs[t] = output
+        #print(output.shape)
         teacher_force = random.random() < teacher_forcing_ratio
         top1 = output.max(1)[1].view(1,-1)
         decoder_input = (target_tensor[t].view(1,-1) if teacher_force else top1.detach())
- 
     
     loss = criterion(outputs[1:].view(-1, outputs.shape[2]), target_tensor[1:].view(-1))
     loss.backward()
@@ -159,7 +159,6 @@ def trainIters(args, train_iter, valid_iter, encoder, decoder, print_every=10, p
             print_loss_total += loss
             plot_loss_total += loss
             train_loss += loss
-
         train_loss = train_loss/len(train_iter)
         valid_loss = evaluateModel(encoder, decoder, valid_iter, criterion)
         encoder_scheduler.step()

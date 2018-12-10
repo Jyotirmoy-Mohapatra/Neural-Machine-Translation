@@ -5,6 +5,7 @@ from Decoder.DecoderRNN import *
 from Encoder.encoderRNN import *
 from Transformer import *
 from Decoder.AttnDecoderRNN import *
+from Decoder.Attention import *
 from utils.Data_Loader_Torchtext import *
 from torchtext.data import Field, BucketIterator
 
@@ -35,14 +36,18 @@ if args.model == "selfattention":
 
     trainItersTransformer(args, model, train_iter, valid_iter, criterion, pad_idx,n_iters=100,plot_every=1,save_every=10,warmup=20)
 else:
+    print(device)
     encoder = EncoderRNN(len(SRC.vocab), hidden_size).to(device)
     decoder = DecoderRNN(hidden_size, len(TGT.vocab)).to(device)
 
     if args.model == "attention":
-        decoder = AttnDecoderRNN(hidden_size, output_lang.n_words).to(device)
-    print("Creating Iters")
+        #encoder = EncoderRNN(len(SRC.vocab), hidden_size,bidirectional=True).to(device)
+        attn = Attention(hidden_size,hidden_size)
+        decoder = AttnDecoderRNN(hidden_size, len(TGT.vocab),attn).to(device)
     train_iter, valid_iter, test_iterator = BucketIterator.splits(
     (train, val, test), batch_size=BATCH_SIZE, device=device)
+    print(len(train_iter))
+    print(len(valid_iter))
+    print(len(test_iterator))
     ##UNCOMMENT TO TRAIN THE MODEL
-    print("Training")
     trainIters(args, train_iter, valid_iter, encoder, decoder, print_every=10)
