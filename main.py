@@ -40,8 +40,9 @@ else:
 
     if args.model == "attention":
         decoder = AttnDecoderRNN(hidden_size, output_lang.n_words).to(device)
-    
+    print("Creating Iters")
     train_iter, valid_iter, test_iterator = BucketIterator.splits(
     (train, val, test), batch_size=BATCH_SIZE, device=device)
     ##UNCOMMENT TO TRAIN THE MODEL
+    print("Training")
     trainIters(args, train_iter, valid_iter, encoder, decoder, print_every=10)
