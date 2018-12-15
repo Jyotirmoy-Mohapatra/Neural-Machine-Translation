@@ -253,6 +253,29 @@ def make_model(src_vocab, tgt_vocab, N=6,
             nn.init.xavier_uniform_(p)
     return model
 
+
+def make_encoder( N=6,
+               d_model=256, d_ff=1024, h=8, dropout=0.1):
+    "Helper: Construct a model from hyperparameters."
+    c = copy.deepcopy
+    attn = MultiHeadedAttention(h, d_model)
+    ff = PositionwiseFeedForward(d_model, d_ff, dropout)
+    position = PositionalEncoding(d_model, dropout)
+    encoder = Encoder(EncoderLayer(d_model, c(attn), c(ff), dropout), N)
+
+    # This was important from their code. 
+    # Initialize parameters with Glorot / fan_avg.
+    for p in encoder.parameters():
+        if p.dim() > 1:
+            nn.init.xavier_uniform_(p)
+    return encoder
+
+def get_sequential_embeddings(src_vocab,d_model=256):
+    c = copy.deepcopy
+    position = PositionalEncoding(d_model, dropout)
+    seq_embeddings=nn.Sequential(Embeddings(d_model, src_vocab), c(position))
+    return seq_embeddings
+
 class Batch:
     "Object for holding a batch of data with mask during training."
     def __init__(self, src, trg=None, pad=0):
@@ -357,10 +380,10 @@ class SimpleLossCompute:
         #print(y.type())
         #print(norm)
         loss = self.criterion(x.contiguous().view(-1, x.size(-1)), y.contiguous().view(-1)) / norm
+        loss.backward()
         if self.opt is not None:
-            loss.backward()
             self.opt.step()
-            self.opt.optimizer.zero_grad()
+            self.opt.zero_grad()
         return loss.data.item() * norm
 
 class MultiGPULossCompute:
@@ -427,18 +450,20 @@ class MyIterator(data.Iterator):
         if self.train:
             def pool(d, random_shuffler):
                 for p in data.batch(d, self.batch_size * 100):
-                    p_batch = data.batch(
-                        sorted(p, key=self.sort_key),
-                        self.batch_size, self.batch_size_fn)
-                    for b in random_shuffler(list(p_batch)):
-                        yield b
+                    if len(p)>0:
+                        p_batch = data.batch(
+                            sorted(p, key=self.sort_key),
+                            self.batch_size, self.batch_size_fn)
+                        for b in random_shuffler(list(p_batch)):
+                            yield b
             self.batches = pool(self.data(), self.random_shuffler)
             
         else:
             self.batches = []
             for b in data.batch(self.data(), self.batch_size,
                                           self.batch_size_fn):
-                self.batches.append(sorted(b, key=self.sort_key))
+                if len(b)>0:
+                    self.batches.append(sorted(b, key=self.sort_key))
 
 def rebatch(pad_idx, batch):
     "Fix order in torchtext to match ours"
