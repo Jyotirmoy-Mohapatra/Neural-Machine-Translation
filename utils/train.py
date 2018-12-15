@@ -55,13 +55,13 @@ def train(input_tensor, target_tensor, encoder, decoder, encoder_optimizer, deco
     trg_vocab_size = len(TGT.vocab)
     
     loss = 0
-    
-    cell, hidden = encoder(input_tensor, encoder_hidden)
+    cell, encoder_hidden = encoder(input_tensor, encoder_hidden)
     outputs = torch.zeros(max_len, batch_size, trg_vocab_size).cuda()
     decoder_input = target_tensor[0,:].view(1,-1)
-    decoder_hidden = encoder_hidden
+    cvec = encoder_hidden
+    hidden = encoder_hidden
     for t in range(1, max_len):    
-        output, hidden, attn = decoder(decoder_input, hidden, cell)
+        output, hidden, attn = decoder(decoder_input, hidden, cvec)
         outputs[t] = output
         #print(output.shape)
         teacher_force = random.random() < teacher_forcing_ratio
@@ -112,11 +112,12 @@ def evaluateModel(encoder, decoder,iterator, criterion):
             cell, hidden = encoder(src, encoder_hidden)
             decoder_input = trg[0,:].view(1,-1)
             decoder_hidden = encoder_hidden
+            cvec = hidden
             #first input to the decoder is the <sos> tokens
          
             for t in range(1, max_len):
             
-                output, hidden, attn = decoder(decoder_input, hidden, cell)
+                output, hidden, attn = decoder(decoder_input, hidden, cvec)
                 outputs[t] = output
                 top1 = output.max(1)[1].view(1,-1)
                 decoder_input = top1
@@ -163,7 +164,7 @@ def trainIters(args, train_iter, valid_iter, encoder, decoder, print_every=10, p
         valid_loss = evaluateModel(encoder, decoder, valid_iter, criterion)
         encoder_scheduler.step()
         decoder_scheduler.step()
-
+        
         print(f'| Epoch: {iter+0:03} | Train Loss: {train_loss:.3f} | Train PPL: {math.exp(train_loss):7.3f} | Val. Loss: {valid_loss:.3f} | Val. PPL: {math.exp(valid_loss):7.3f} |')
         
         """
