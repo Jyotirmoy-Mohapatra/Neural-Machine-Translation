@@ -39,7 +39,8 @@ else:
     print(device)
     encoder = EncoderRNN(len(SRC.vocab), hidden_size).to(device)
     decoder = DecoderRNN(hidden_size, len(TGT.vocab)).to(device)
-
+    if args.model == "cnn":
+        encoder = EncoderCNN(len(SRC.vocab), hidden_size).to(device)
     if args.model == "attention":
         #encoder = EncoderRNN(len(SRC.vocab), hidden_size,bidirectional=True).to(device)
         attn = Attention(hidden_size,hidden_size)
