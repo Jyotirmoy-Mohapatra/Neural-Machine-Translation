@@ -36,7 +36,7 @@ def greedy_decode(model, src, src_mask, max_len, start_symbol):
                         torch.ones(1, 1).type_as(src.data).fill_(next_word)], dim=1)
     return ys
 
-BATCH_SIZE = 2500
+BATCH_SIZE = 1
 test_iter = MyIterator(test, batch_size=BATCH_SIZE, device=0, \
                             repeat=False, sort_key=lambda x: (len(x.src), len(x.trg)), \
                             batch_size_fn=batch_size_fn, train=False)
@@ -44,7 +44,7 @@ test_iter = MyIterator(test, batch_size=BATCH_SIZE, device=0, \
 #test_iter.TRG=test_iter.TRG.to(device)
 #test_iter.src=test_iter.src.to(device)
 
-model = make_model(len(SRC.vocab), len(TGT.vocab), N=6)
+model = make_model(len(SRC.vocab), len(TGT.vocab), N=2)
 model.to(device)
 model.load_state_dict(torch.load(args.model))
 f_out=open(args.output,'w')
@@ -68,5 +68,4 @@ for i, batch in enumerate(test_iter):
         actual_line+=sym+" "
     f_out.write(actual_line+"\n\n")
 f_out.close()
-
 
