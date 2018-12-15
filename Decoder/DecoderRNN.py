@@ -24,7 +24,7 @@ class DecoderRNN(nn.Module):
 			self.out = nn.Linear(hidden_size, output_size)
 		self.softmax = nn.LogSoftmax(dim=1)
 
-	def forward(self, input, hidden, weights):
+	def forward(self, input, hidden, context):
 		#print(input.shape)
 		batch_size = input.size(0)
 		#reset hidden state here
@@ -34,12 +34,13 @@ class DecoderRNN(nn.Module):
 			self.hidden = self.initHidden(batch_size)
 		#print(input.size())
 		output = self.embedding(input)
-		output = F.relu(output)
-		output, self.hidden = self.gru(output, hidden)
+		emb_con = torch.cat((output, context), dim=2)
+		#output = F.relu(output)
+		output, self.hidden = self.gru(emb_con, hidden)
 		#print("\n",output.size(),"\n")
 		#print(self.out(output[0]).size())
 		output = self.softmax(self.out(output[0]))
-		return output, self.hidden, weights
+		return output, self.hidden, context
 
 	def initHidden(self,batch_size):
 		if self.bi==True:
